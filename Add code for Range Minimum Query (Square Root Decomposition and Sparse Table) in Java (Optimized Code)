@@ -1,0 +1,99 @@
+// Optimized RMQ using Square Root Decomposition
+class RMQSquareRootDecomposition {
+    private int[] arr, blockMin;
+    private int blkSize, n;
+
+    // Constructor
+    public RMQSquareRootDecomposition(int[] input) {
+        n = input.length;
+        arr = input.clone();
+        blkSize = (int) Math.sqrt(n) + 1; // Optimized block size calculation
+        blockMin = new int[blkSize];
+        Arrays.fill(blockMin, Integer.MAX_VALUE); // Initialize blockMin with maximum value
+        preprocess();
+    }
+
+    // Preprocessing: Compute the min of each block
+    private void preprocess() {
+        for (int i = 0; i < n; i++) {
+            int blockIndex = i / blkSize;
+            blockMin[blockIndex] = Math.min(blockMin[blockIndex], arr[i]);
+        }
+    }
+
+    // Query for the minimum in range [L, R]
+    public int query(int L, int R) {
+        int min = Integer.MAX_VALUE;
+
+        // Traverse elements until the start of the next block
+        while (L <= R && L % blkSize != 0) {
+            min = Math.min(min, arr[L]);
+            L++;
+        }
+
+        // Traverse entire blocks
+        while (L + blkSize - 1 <= R) {
+            min = Math.min(min, blockMin[L / blkSize]);
+            L += blkSize;
+        }
+
+        // Traverse elements after the last complete block
+        while (L <= R) {
+            min = Math.min(min, arr[L]);
+            L++;
+        }
+
+        return min;
+    }
+}
+
+
+//---------------------------------------------------------------------------//
+
+
+// Optimized RMQ using Sparse Table
+class RMQSparseTable {
+    private int[][] sparseTable;
+    private int[] log;
+    private int n;
+
+    // Constructor
+    public RMQSparseTable(int[] input) {
+        n = input.length;
+        buildSparseTable(input);
+    }
+
+    // Build the sparse table
+    private void buildSparseTable(int[] arr) {
+        int maxLog = (int) (Math.log(n) / Math.log(2)) + 1;
+        sparseTable = new int[n][maxLog];
+        log = new int[n + 1];
+
+        // Precompute logarithms
+        log[1] = 0;
+        for (int i = 2; i <= n; i++) {
+            log[i] = log[i / 2] + 1;
+        }
+
+        // Initialize sparse table for length 1 intervals
+        for (int i = 0; i < n; i++) {
+            sparseTable[i][0] = arr[i];
+        }
+
+        // Build sparse table using dynamic programming
+        for (int j = 1; (1 << j) <= n; j++) {
+            for (int i = 0; i + (1 << j) <= n; i++) {
+                sparseTable[i][j] = Math.min(sparseTable[i][j - 1], sparseTable[i + (1 << (j - 1))][j - 1]);
+            }
+        }
+    }
+
+    // Query for the minimum in range [L, R]
+    public int query(int L, int R) {
+        int j = log[R - L + 1];
+        return Math.min(sparseTable[L][j], sparseTable[R - (1 << j) + 1][j]);
+    }
+}
+
+
+
